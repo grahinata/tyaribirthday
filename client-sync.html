@@ -67,6 +67,7 @@
                 location.href = 'thanks.html';
 
             } else if (data.result === 'fail') {
+                // 両方が押し終わって「失敗」と確定した時のみ、タイマーを止めて遷移
                 clearInterval(checkInterval);
                 sessionStorage.setItem('lastDiff', data.diff);
                 sessionStorage.setItem('prevSyncPage', 'client-sync.html');
@@ -78,8 +79,9 @@
                     location.href = 'fail.html';
                 });
             }
-            // 'waiting' の場合は何もせず次のタイマーチェックを待つ
-        });
+            // data.result === 'waiting' の時は何もしない（待ち続ける）
+        })
+        .catch(() => {});
     }
 </script>
 </body>
