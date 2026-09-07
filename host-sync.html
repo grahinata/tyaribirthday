@@ -52,7 +52,6 @@
         document.getElementById('push-btn').disabled = true;
         document.getElementById('status-msg').innerText = "⏳ 相手が押すのを待っています...";
 
-        // 1. 押した時間をGASに記録
         fetch(GAS_URL, {
             method: 'POST',
             body: JSON.stringify({ action: 'push', roomId: currentRoomId, role: myRole, time: Date.now(), psk: psk })
@@ -65,7 +64,6 @@
                 document.getElementById('status-msg').innerText = "";
                 return;
             }
-            // 2. 正常に記録できたら、相手が押すまで定期的に状態確認を開始
             checkInterval = setInterval(() => checkResult(psk), 800);
         })
         .catch(() => {
@@ -81,10 +79,7 @@
         })
         .then(res => res.json())
         .then(data => {
-            if (data.result === 'waiting') {
-                // 相手が押すのを待っている状態（何もしない）
-                return;
-            }
+            if (data.result === 'waiting') return; // 片方の押し待ち中は何もしない
 
             if (data.result === 'success') {
                 clearInterval(checkInterval);
@@ -92,17 +87,11 @@
                 location.href = 'gift.html';
 
             } else if (data.result === 'fail') {
-                // 両方が押し終わって初めてここを通る
+                // 両方揃って失敗が確定したら即座に画面遷移
                 clearInterval(checkInterval);
                 sessionStorage.setItem('lastDiff', data.diff);
                 sessionStorage.setItem('prevSyncPage', 'host-sync.html');
-
-                fetch(GAS_URL, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ action: 'reset', roomId: currentRoomId, psk: psk }) 
-                }).then(() => {
-                    location.href = 'fail.html';
-                });
+                location.href = 'fail.html';
             }
         })
         .catch(() => {});
