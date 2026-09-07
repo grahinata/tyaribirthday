@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday!</title>
+    <!-- リアルタイム通信用 PeerJS & 紙吹雪 -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            background-color: #1a1a2e;
+            color: #ffffff;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .container {
+            background: #16213e;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 450px;
+            width: 100%;
+        }
+        .page { display: none; }
+        .active { display: block; }
+        
+        button {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            font-size: 1.1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        button:active { transform: scale(0.95); }
+        button.secondary { background: #0f3460; }
+        
+        .status-box {
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-size: 1rem;
+            word-break: break-all;
+        }
+        .gift-btn {
+            background: #00d26a;
+            font-size: 1.2rem;
+            padding: 15px 30px;
+            text-decoration: none;
+            color: white;
+            display: inline-block;
+            border-radius: 30px;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        input {
+            padding: 10px;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: 1px solid #e94560;
+            width: 70%;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- PAGE 1: 注意書き -->
+    <div id="page1" class="page active">
+        <h2>⚠️ 音量ご注意</h2>
+        <p>次のページでバースデーソングが流れます。<br>音量を調整して進んでね！</p>
+        <button onclick="nextPage(2, true)">🔊 音ありで進む</button> <br>
+        <button class="secondary" onclick="nextPage(2, false)">🔇 無音で進む</button>
+    </div>
+
+    <!-- PAGE 2: メインお祝い -->
+    <div id="page2" class="page">
+        <h1 style="color: #ff4757;">🎉 Happy Birthday! 🎉</h1>
+        <p style="font-size: 1.2rem;">誕生日おめでとう！！</p>
+        <div style="font-size: 80px; margin: 20px 0;">🎂</div>
+        <button onclick="nextPage(3, false)">🎁 プレゼントを受け取る</button>
+        <audio id="bgm" src="https://actions.google.com/sounds/v1/ambiences/carnival_music.ogg" loop></audio>
+    </div>
+
+    <!-- PAGE 3: 2台同時タップ接続 -->
+    <div id="page3" class="page">
+        <h2>🔒 2人同時タップ解錠</h2>
+        <p>このプレゼントは2人のスマホで<br>「せーの」で同時に押さないと開かないよ！</p>
+        
+        <div id="setup-section">
+            <p>役割を選んでね：</p>
+            <button onclick="initHost()">主役（ホストになる）</button>
+            <button onclick="showJoinInput()" class="secondary">彼女さん（接続する）</button>
+            
+            <div id="join-input-box" style="display:none; margin-top:15px;">
+                <input type="text" id="host-id-input" placeholder="相手のROOM IDを入力"> <br>
+                <button onclick="initClient()">接続する</button>
+            </div>
+        </div>
+
+        <div id="room-info" class="status-box" style="display:none;">
+            接続待機中...<br>
+            <span id="display-room-id" style="color: #f8b500; font-size: 1.4rem; font-weight: bold;"></span><br>
+            <small>※このIDを彼女さんに教えてね！</small>
+        </div>
+
+        <!-- 接続成功後の同期エリア -->
+        <div id="sync-section" style="display:none;">
+            <p style="color: #00d26a; font-weight: bold;">✅ 2人のスマホが接続されました！</p>
+            <p>電話で「せーの！」と声を合わせて<br>同時に下のボタンを押してね！</p>
+            <button id="push-btn" style="background:#ff4757; font-size:1.5rem; padding:20px 40px;" onclick="handlePush()">せーの！(PUSH)</button>
+            <p id="sync-status" style="margin-top:15px; color:#f8b500;"></p>
+        </div>
+    </div>
+
+    <!-- PAGE 4: ギフト画面 -->
+    <div id="page4" class="page">
+        <h1 style="color: #00d26a;">🔓 解錠成功！！</h1>
+        <p>おめでとう！完璧なタイミングでした！</p>
+        <div style="font-size: 80px; margin: 10px 0;">🎁</div>
+        <p>下記からスタバギフトを受け取ってね！</p>
+        <a href="https://gift.starbucks.co.jp/" target="_blank" class="gift-btn">☕ ギフトを受け取る</a>
+    </div>
+</div>
+
+<script>
+    let peer = null;
+    let conn = null;
+    let myPushTime = null;
+    let partnerPushTime = null;
+
+    function nextPage(pageNum, sound) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('page' + pageNum).classList.add('active');
+
+        if (pageNum === 2) {
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            if (sound) document.getElementById('bgm').play().catch(()=>{});
+        }
+    }
+
+    // ホスト側の処理（ランダムな部屋IDを生成）
+    function initHost() {
+        const roomId = Math.floor(1000 + Math.random() * 9000).toString();
+        peer = new Peer('hbd-room-' + roomId);
+
+        document.getElementById('setup-section').style.display = 'none';
+        document.getElementById('room-info').style.display = 'block';
+        document.getElementById('display-room-id').innerText = "ROOM ID: " + roomId;
+
+        peer.on('connection', (c) => {
+            conn = c;
+            setupDataListener();
+            showSyncSection();
+        });
+    }
+
+    function showJoinInput() {
+        document.getElementById('join-input-box').style.display = 'block';
+    }
+
+    // クライアント側の処理（ホストの部屋IDに接続）
+    function initClient() {
+        const inputId = document.getElementById('host-id-input').value.trim();
+        if (!inputId) return alert('ROOM IDを入力してね');
+
+        peer = new Peer();
+        peer.on('open', () => {
+            conn = peer.connect('hbd-room-' + inputId);
+            setupDataListener();
+            showSyncSection();
+        });
+    }
+
+    function showSyncSection() {
+        document.getElementById('setup-section').style.display = 'none';
+        document.getElementById('room-info').style.display = 'none';
+        document.getElementById('sync-section').style.display = 'block';
+    }
+
+    // データ通信の監視
+    function setupDataListener() {
+        conn.on('data', (data) => {
+            if (data.type === 'PUSH') {
+                partnerPushTime = data.time;
+                checkSync();
+            }
+        });
+    }
+
+    // ボタンが押された時
+    function handlePush() {
+        myPushTime = Date.now();
+        document.getElementById('push-btn').disabled = true;
+        document.getElementById('sync-status').innerText = "相手の押し待ち中...";
+
+        // 相手にタイムスタンプを送信
+        if (conn) {
+            conn.send({ type: 'PUSH', time: myPushTime });
+        }
+        checkSync();
+    }
+
+    // 2人のタイムスタンプの差を判定（1秒以内なら合格）
+    function checkSync() {
+        if (myPushTime && partnerPushTime) {
+            const diff = Math.abs(myPushTime - partnerPushTime);
+            if (diff <= 1000) { // 1000ミリ秒（1秒）以内の誤差ならOK
+                nextPage(4, false);
+                confetti({ particleCount: 200, spread: 100, origin: { y: 0.4 } });
+            } else {
+                document.getElementById('sync-status').innerText = `タイミングがズレたよ！(誤差: ${(diff/1000).toFixed(2)}秒)\nもう一回せーので押してね！`;
+                // リセットして再挑戦できるようにする
+                setTimeout(() => {
+                    myPushTime = null;
+                    partnerPushTime = null;
+                    document.getElementById('push-btn').disabled = false;
+                }, 1500);
+            }
+        }
+    }
+</script>
+
+</body>
+</html>
