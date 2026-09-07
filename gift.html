@@ -17,10 +17,18 @@
     <p>おめでとう！完璧なチームワークでした！</p>
     <div style="font-size: 80px; margin: 10px 0;">🎁</div>
     <p>下記からスタバギフトを受け取ってね！</p>
-    <a href="https://gift.starbucks.co.jp/" target="_blank" class="gift-btn">☕ ギフトを受け取る</a>
+    <a id="gift-link" href="#" target="_blank" class="gift-btn">☕ ギフトを受け取る</a>
 </div>
 <script>
     confetti({ particleCount: 200, spread: 100, origin: { y: 0.4 } });
+    
+    // 一時保存されたURLを取得してボタンにセット
+    const giftUrl = sessionStorage.getItem('giftUrl');
+    if (giftUrl) {
+        document.getElementById('gift-link').href = giftUrl;
+    } else {
+        alert('ギフトURLの読み込みに失敗しました。');
+    }
 </script>
 </body>
 </html>
