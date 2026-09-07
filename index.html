@@ -161,10 +161,7 @@
 
         const roomId = Math.floor(1000 + Math.random() * 9000).toString();
         
-        // 接続安定化のためのPeer設定
-        peer = new Peer('hbd-room-' + roomId, {
-            debug: 1
-        });
+        peer = new Peer('hbd-room-' + roomId, { debug: 1 });
 
         peer.on('open', (id) => {
             document.getElementById('system-msg').innerText = "彼女にこのIDを伝えてね：";
@@ -199,7 +196,6 @@
         peer.on('open', () => {
             conn = peer.connect('hbd-room-' + inputId, { reliable: true });
             
-            // 接続成功時
             conn.on('open', () => {
                 setupDataListener();
                 showSyncSection();
@@ -225,6 +221,12 @@
             if (data.type === 'PUSH') {
                 partnerPushTime = data.time;
                 checkSync();
+            } else if (data.type === 'SUCCESS') {
+                // ホストからの解錠成功信号を受け取ってクライアント側も画面遷移
+                unlockSuccess();
+            } else if (data.type === 'FAIL') {
+                // ホストからの失敗信号を受け取って再挑戦表示
+                showFailStatus(data.diff);
             }
         });
     }
@@ -241,31 +243,46 @@
         checkSync();
     }
 
-    // 2人の同時押しタイミング判定
+    // 同時押し判定
     function checkSync() {
         if (myPushTime && partnerPushTime) {
             const diff = Math.abs(myPushTime - partnerPushTime);
             
-            // 1.5秒（1500ミリ秒）以内の誤差なら成功とする（通信遅延を考慮）
+            // 許容誤差 1.5秒以内
             if (diff <= 1500) {
-                document.getElementById('sync-status').innerText = "成功！！ロック解除中...";
-                setTimeout(() => {
-                    nextPage(4, false);
-                    confetti({ particleCount: 200, spread: 100, origin: { y: 0.4 } });
-                }, 500);
+                // クライアント側にも成功信号を送信
+                if (conn && conn.open) {
+                    conn.send({ type: 'SUCCESS' });
+                }
+                unlockSuccess();
             } else {
-                // 失敗時はリセットして再挑戦できるようにする
-                const secDiff = (diff / 1000).toFixed(2);
-                document.getElementById('sync-status').innerText = `ズレちゃった！(誤差: ${secDiff}秒)\nもう一度せーので押してね！`;
-                
-                setTimeout(() => {
-                    myPushTime = null;
-                    partnerPushTime = null;
-                    document.getElementById('push-btn').disabled = false;
-                    document.getElementById('sync-status').innerText = "";
-                }, 2000);
+                // クライアント側にも失敗信号を送信
+                if (conn && conn.open) {
+                    conn.send({ type: 'FAIL', diff: diff });
+                }
+                showFailStatus(diff);
             }
         }
+    }
+
+    function unlockSuccess() {
+        document.getElementById('sync-status').innerText = "成功！！ロック解除中...";
+        setTimeout(() => {
+            nextPage(4, false);
+            confetti({ particleCount: 200, spread: 100, origin: { y: 0.4 } });
+        }, 500);
+    }
+
+    function showFailStatus(diff) {
+        const secDiff = (diff / 1000).toFixed(2);
+        document.getElementById('sync-status').innerText = `ズレちゃった！(誤差: ${secDiff}秒)\nもう一度せーので押してね！`;
+        
+        setTimeout(() => {
+            myPushTime = null;
+            partnerPushTime = null;
+            document.getElementById('push-btn').disabled = false;
+            document.getElementById('sync-status').innerText = "";
+        }, 2000);
     }
 </script>
 
