@@ -31,12 +31,20 @@
     let currentRoomId = "";
     let checkInterval = null;
 
+    // 前回のROOM IDがあれば自動補完
+    const savedRoomId = sessionStorage.getItem('clientRoomId');
+    if (savedRoomId) {
+        document.getElementById('client-room-input').value = savedRoomId;
+    }
+
     function pushButton() {
         const input = document.getElementById('client-room-input').value.trim();
         if (!input || input.length !== 4) return alert('4桁のROOM IDを入力してね');
         currentRoomId = input;
+        sessionStorage.setItem('clientRoomId', currentRoomId);
 
         if (checkInterval) clearInterval(checkInterval);
+
         document.getElementById('push-btn').disabled = true;
         document.getElementById('status-msg').innerText = "⏳ 相手が押すのを待っています...";
 
@@ -58,12 +66,20 @@
             if (data.result === 'success') {
                 clearInterval(checkInterval);
                 location.href = 'thanks.html';
+
             } else if (data.result === 'fail') {
                 clearInterval(checkInterval);
-                alert(`失敗！(誤差: ${(data.diff / 1000).toFixed(2)}秒)\nもう一度せーので押してね！`);
-                fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'reset', roomId: currentRoomId }) });
-                document.getElementById('push-btn').disabled = false;
-                document.getElementById('status-msg').innerText = "";
+                
+                // 誤差と元ページを保存して fail.html に遷移
+                sessionStorage.setItem('lastDiff', data.diff);
+                sessionStorage.setItem('prevSyncPage', 'client-sync.html');
+
+                fetch(GAS_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ action: 'reset', roomId: currentRoomId }) 
+                }).then(() => {
+                    location.href = 'fail.html';
+                });
             }
         });
     }
