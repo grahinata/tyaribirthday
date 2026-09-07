@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Happy Birthday!</title>
-    <!-- リアルタイム通信用 PeerJS & 紙吹雪 -->
+    <!-- PeerJS & 紙吹雪ライブラリ -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <style>
@@ -45,6 +45,7 @@
             transition: 0.2s;
         }
         button:active { transform: scale(0.95); }
+        button:disabled { background: #555; cursor: not-allowed; }
         button.secondary { background: #0f3460; }
         
         .status-box {
@@ -54,6 +55,15 @@
             margin: 15px 0;
             font-size: 1rem;
             word-break: break-all;
+        }
+        input {
+            padding: 12px;
+            font-size: 1.2rem;
+            border-radius: 8px;
+            border: 2px solid #e94560;
+            width: 70%;
+            text-align: center;
+            margin-bottom: 10px;
         }
         .gift-btn {
             background: #00d26a;
@@ -65,15 +75,6 @@
             border-radius: 30px;
             margin-top: 15px;
             font-weight: bold;
-        }
-        input {
-            padding: 10px;
-            font-size: 1rem;
-            border-radius: 8px;
-            border: 1px solid #e94560;
-            width: 70%;
-            text-align: center;
-            margin-bottom: 10px;
         }
     </style>
 </head>
@@ -104,34 +105,33 @@
         
         <div id="setup-section">
             <p>役割を選んでね：</p>
-            <button onclick="initHost()">主役（ホストになる）</button>
-            <button onclick="showJoinInput()" class="secondary">彼女さん（接続する）</button>
+            <button onclick="initHost()">主役（ホスト）</button>
+            <button onclick="showJoinInput()" class="secondary">彼女さん（接続）</button>
             
             <div id="join-input-box" style="display:none; margin-top:15px;">
-                <input type="text" id="host-id-input" placeholder="相手のROOM IDを入力"> <br>
-                <button onclick="initClient()">接続する</button>
+                <input type="number" id="host-id-input" placeholder="4桁のROOM ID"> <br>
+                <button id="connect-btn" onclick="initClient()">接続する</button>
             </div>
         </div>
 
         <div id="room-info" class="status-box" style="display:none;">
-            接続待機中...<br>
-            <span id="display-room-id" style="color: #f8b500; font-size: 1.4rem; font-weight: bold;"></span><br>
-            <small>※このIDを彼女さんに教えてね！</small>
+            <p id="system-msg" style="margin:0 0 10px 0; color:#f8b500;">サーバーに接続中...</p>
+            <span id="display-room-id" style="color: #ff4757; font-size: 1.8rem; font-weight: bold;"></span>
         </div>
 
         <!-- 接続成功後の同期エリア -->
         <div id="sync-section" style="display:none;">
-            <p style="color: #00d26a; font-weight: bold;">✅ 2人のスマホが接続されました！</p>
-            <p>電話で「せーの！」と声を合わせて<br>同時に下のボタンを押してね！</p>
+            <p style="color: #00d26a; font-weight: bold; font-size: 1.2rem;">✅ 2人の通信が接続されました！</p>
+            <p>通話で「せーの！」と声を合わせて<br>同時に下のボタンを押してね！</p>
             <button id="push-btn" style="background:#ff4757; font-size:1.5rem; padding:20px 40px;" onclick="handlePush()">せーの！(PUSH)</button>
-            <p id="sync-status" style="margin-top:15px; color:#f8b500;"></p>
+            <p id="sync-status" style="margin-top:15px; color:#f8b500; font-weight:bold;"></p>
         </div>
     </div>
 
     <!-- PAGE 4: ギフト画面 -->
     <div id="page4" class="page">
         <h1 style="color: #00d26a;">🔓 解錠成功！！</h1>
-        <p>おめでとう！完璧なタイミングでした！</p>
+        <p>おめでとう！最高のチームワークでした！</p>
         <div style="font-size: 80px; margin: 10px 0;">🎁</div>
         <p>下記からスタバギフトを受け取ってね！</p>
         <a href="https://gift.starbucks.co.jp/" target="_blank" class="gift-btn">☕ ギフトを受け取る</a>
@@ -154,19 +154,31 @@
         }
     }
 
-    // ホスト側の処理（ランダムな部屋IDを生成）
+    // ホスト側の処理
     function initHost() {
-        const roomId = Math.floor(1000 + Math.random() * 9000).toString();
-        peer = new Peer('hbd-room-' + roomId);
-
         document.getElementById('setup-section').style.display = 'none';
         document.getElementById('room-info').style.display = 'block';
-        document.getElementById('display-room-id').innerText = "ROOM ID: " + roomId;
+
+        const roomId = Math.floor(1000 + Math.random() * 9000).toString();
+        
+        // 接続安定化のためのPeer設定
+        peer = new Peer('hbd-room-' + roomId, {
+            debug: 1
+        });
+
+        peer.on('open', (id) => {
+            document.getElementById('system-msg').innerText = "彼女にこのIDを伝えてね：";
+            document.getElementById('display-room-id').innerText = "ROOM ID: " + roomId;
+        });
 
         peer.on('connection', (c) => {
             conn = c;
             setupDataListener();
             showSyncSection();
+        });
+
+        peer.on('error', (err) => {
+            alert('通信エラーが発生しました。ページを再読み込みしてやり直してください。');
         });
     }
 
@@ -174,16 +186,30 @@
         document.getElementById('join-input-box').style.display = 'block';
     }
 
-    // クライアント側の処理（ホストの部屋IDに接続）
+    // クライアント側の処理
     function initClient() {
         const inputId = document.getElementById('host-id-input').value.trim();
-        if (!inputId) return alert('ROOM IDを入力してね');
+        if (!inputId) return alert('4桁のROOM IDを入力してください');
+
+        document.getElementById('connect-btn').disabled = true;
+        document.getElementById('connect-btn').innerText = "接続中...";
 
         peer = new Peer();
+
         peer.on('open', () => {
-            conn = peer.connect('hbd-room-' + inputId);
-            setupDataListener();
-            showSyncSection();
+            conn = peer.connect('hbd-room-' + inputId, { reliable: true });
+            
+            // 接続成功時
+            conn.on('open', () => {
+                setupDataListener();
+                showSyncSection();
+            });
+        });
+
+        peer.on('error', (err) => {
+            alert('部屋が見つからないか、接続に失敗しました。IDを確認してください。');
+            document.getElementById('connect-btn').disabled = false;
+            document.getElementById('connect-btn').innerText = "接続する";
         });
     }
 
@@ -193,7 +219,7 @@
         document.getElementById('sync-section').style.display = 'block';
     }
 
-    // データ通信の監視
+    // データ受信の監視
     function setupDataListener() {
         conn.on('data', (data) => {
             if (data.type === 'PUSH') {
@@ -203,34 +229,41 @@
         });
     }
 
-    // ボタンが押された時
+    // ボタンが押された時の処理
     function handlePush() {
         myPushTime = Date.now();
         document.getElementById('push-btn').disabled = true;
-        document.getElementById('sync-status').innerText = "相手の押し待ち中...";
+        document.getElementById('sync-status').innerText = "相手が押すのを待っています...";
 
-        // 相手にタイムスタンプを送信
-        if (conn) {
+        if (conn && conn.open) {
             conn.send({ type: 'PUSH', time: myPushTime });
         }
         checkSync();
     }
 
-    // 2人のタイムスタンプの差を判定（1秒以内なら合格）
+    // 2人の同時押しタイミング判定
     function checkSync() {
         if (myPushTime && partnerPushTime) {
             const diff = Math.abs(myPushTime - partnerPushTime);
-            if (diff <= 1000) { // 1000ミリ秒（1秒）以内の誤差ならOK
-                nextPage(4, false);
-                confetti({ particleCount: 200, spread: 100, origin: { y: 0.4 } });
+            
+            // 1.5秒（1500ミリ秒）以内の誤差なら成功とする（通信遅延を考慮）
+            if (diff <= 1500) {
+                document.getElementById('sync-status').innerText = "成功！！ロック解除中...";
+                setTimeout(() => {
+                    nextPage(4, false);
+                    confetti({ particleCount: 200, spread: 100, origin: { y: 0.4 } });
+                }, 500);
             } else {
-                document.getElementById('sync-status').innerText = `タイミングがズレたよ！(誤差: ${(diff/1000).toFixed(2)}秒)\nもう一回せーので押してね！`;
-                // リセットして再挑戦できるようにする
+                // 失敗時はリセットして再挑戦できるようにする
+                const secDiff = (diff / 1000).toFixed(2);
+                document.getElementById('sync-status').innerText = `ズレちゃった！(誤差: ${secDiff}秒)\nもう一度せーので押してね！`;
+                
                 setTimeout(() => {
                     myPushTime = null;
                     partnerPushTime = null;
                     document.getElementById('push-btn').disabled = false;
-                }, 1500);
+                    document.getElementById('sync-status').innerText = "";
+                }, 2000);
             }
         }
     }
