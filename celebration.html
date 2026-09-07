@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday!</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        body { background: #1a1a2e; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; box-sizing: border-box; }
+        .container { background: #16213e; padding: 30px; border-radius: 20px; max-width: 450px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        button { background: #e94560; color: white; border: none; padding: 14px 28px; font-size: 1.1rem; border-radius: 30px; margin: 10px 5px; font-weight: bold; cursor: pointer; }
+        button.secondary { background: #0f3460; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 style="color: #ff4757;">🎉 Happy Birthday! 🎉</h1>
+    <p style="font-size: 1.2rem;">誕生日おめでとう！！</p>
+    <div style="font-size: 80px; margin: 20px 0;">🎂</div>
+    
+    <p>どちらで進むか選んでね：</p>
+    <button onclick="location.href='host-sync.html'">🎁 プレゼントを受け取る（主役）</button><br>
+    <button class="secondary" onclick="location.href='client-sync.html'">🤝 開けるのを手伝う</button>
+    
+    <audio id="bgm" src="https://actions.google.com/sounds/v1/ambiences/carnival_music.ogg" loop></audio>
+</div>
+<script>
+    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    if (sessionStorage.getItem('playSound') === 'true') {
+        document.getElementById('bgm').play().catch(()=>{});
+    }
+</script>
+</body>
+</html>
