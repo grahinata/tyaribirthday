@@ -21,24 +21,24 @@
 <body>
 
 <div class="container">
-    <!-- PAGE 1 -->
+    <!-- PAGE 1: 注意書き -->
     <div id="page1" class="page active">
         <h2>⚠️ 音量ご注意</h2>
         <p>次のページでバースデーソングが流れます。<br>音量を調整して進んでね！</p>
-        <button onclick="nextPage(2, true)">🔊 音ありで進む</button> <br>
-        <button class="secondary" onclick="nextPage(2, false)">🔇 無音で進む</button>
+        <button onclick="nextPage('page2', true)">🔊 音ありで進む</button> <br>
+        <button class="secondary" onclick="nextPage('page2', false)">🔇 無音で進む</button>
     </div>
 
-    <!-- PAGE 2 -->
+    <!-- PAGE 2: 誕生日メッセージ -->
     <div id="page2" class="page">
         <h1 style="color: #ff4757;">🎉 Happy Birthday! 🎉</h1>
         <p style="font-size: 1.2rem;">誕生日おめでとう！！</p>
         <div style="font-size: 80px; margin: 20px 0;">🎂</div>
-        <button onclick="nextPage(3, false)">🎁 プレゼントを受け取る</button>
+        <button onclick="nextPage('page3', false)">🎁 プレゼントを受け取る</button>
         <audio id="bgm" src="https://actions.google.com/sounds/v1/ambiences/carnival_music.ogg" loop></audio>
     </div>
 
-    <!-- PAGE 3 -->
+    <!-- PAGE 3: 解錠タップ画面 -->
     <div id="page3" class="page">
         <h2>🔒 2人同時タップ解錠</h2>
         <p>このプレゼントは2人のスマホで<br>「せーの」で同時に押さないと開かないよ！</p>
@@ -66,7 +66,16 @@
         </div>
     </div>
 
-    <!-- PAGE 4 -->
+    <!-- PAGE FAIL: 失敗専用画面 -->
+    <div id="page-fail" class="page">
+        <h1 style="color: #ff4757; font-size: 3rem;">💥 失敗！</h1>
+        <p style="font-size: 1.2rem; font-weight: bold;">タイミングがズレちゃいました！</p>
+        <p id="diff-time-msg" style="color: #f8b500; font-size: 1.1rem; margin: 20px 0;"></p>
+        <p>しっかり息を合わせて「せーの！」で押してね！</p>
+        <button id="retry-btn" onclick="retryPush()" style="font-size: 1.3rem; padding: 15px 35px; background: #0f3460;">🔄 もう一度チャレンジ</button>
+    </div>
+
+    <!-- PAGE 4: ギフト画面 -->
     <div id="page4" class="page">
         <h1 style="color: #00d26a;">🔓 解錠成功！！</h1>
         <p>おめでとう！完璧なチームワークでした！</p>
@@ -78,26 +87,24 @@
 
 <script>
     // ⚠️ 取得したGASのURLを貼り付け ⚠️
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxFj7_MKG2fp1I3vVtfZCxrktdlRDUYoQqnKHJVKUaYwEdD6OboI56Q4QM5MpU83y6B/exec";
+    const GAS_URL = "YOUR_GAS_WEB_APP_URL_HERE";
 
     let myRole = "";
     let currentRoomId = "";
     let checkInterval = null;
 
-    function nextPage(pageNum, sound) {
+    function nextPage(pageId, sound) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById('page' + pageNum).classList.add('active');
-        if (pageNum === 2) {
+        document.getElementById(pageId).classList.add('active');
+        if (pageId === 'page2') {
             confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
             if (sound) document.getElementById('bgm').play().catch(()=>{});
         }
     }
 
-    // ホスト（自分）：4桁のランダムIDを自動発行
     function setupHost() {
         myRole = 'host';
         currentRoomId = Math.floor(1000 + Math.random() * 9000).toString();
-        
         document.getElementById('display-room-id').innerText = currentRoomId;
         document.getElementById('setup-section').style.display = 'none';
         document.getElementById('room-section').style.display = 'block';
@@ -107,30 +114,36 @@
         document.getElementById('client-input-box').style.display = 'block';
     }
 
-    // クライアント（彼女さん）：ID入力
     function setupClient() {
         const input = document.getElementById('client-room-input').value.trim();
         if (!input || input.length !== 4) return alert('4桁のROOM IDを入力してね');
         
         myRole = 'client';
         currentRoomId = input;
-
         document.getElementById('display-room-id').innerText = currentRoomId;
         document.getElementById('setup-section').style.display = 'none';
         document.getElementById('room-section').style.display = 'block';
     }
 
     function pushButton() {
+        if (checkInterval) clearInterval(checkInterval);
+
         document.getElementById('push-btn').disabled = true;
-        document.getElementById('status-msg').innerText = "相手のタップを待っています...";
+        document.getElementById('status-msg').innerText = "⏳ 相手が押すのを待っています...";
 
         const pushTime = Date.now();
 
+        // 押下時間を送信後、判定チェック開始
         fetch(GAS_URL, {
             method: 'POST',
             body: JSON.stringify({ action: 'push', roomId: currentRoomId, role: myRole, time: pushTime })
-        }).then(() => {
-            checkInterval = setInterval(() => checkResult(), 800);
+        })
+        .then(() => {
+            checkInterval = setInterval(checkResult, 800);
+        })
+        .catch(() => {
+            document.getElementById('status-msg').innerText = "通信エラー。もう一度試してください。";
+            document.getElementById('push-btn').disabled = false;
         });
     }
 
@@ -143,27 +156,32 @@
         .then(data => {
             if (data.result === 'success') {
                 clearInterval(checkInterval);
-                document.getElementById('status-msg').innerText = "解錠成功！！";
-                setTimeout(() => {
-                    nextPage(4, false);
-                    confetti({ particleCount: 200, spread: 100, origin: { y: 0.4 } });
-                }, 500);
+                nextPage('page4', false);
+                confetti({ particleCount: 200, spread: 100, origin: { y: 0.4 } });
+
             } else if (data.result === 'fail') {
                 clearInterval(checkInterval);
                 const sec = (data.diff / 1000).toFixed(2);
-                document.getElementById('status-msg').innerText = `ズレちゃった！(誤差: ${sec}秒)\nもう一度せーので押してね！`;
                 
+                // 失敗画面へ切り替え
+                document.getElementById('diff-time-msg').innerText = `誤差: ${sec}秒`;
+                nextPage('page-fail', false);
+
+                // GAS側のデータをリセット
                 fetch(GAS_URL, {
                     method: 'POST',
                     body: JSON.stringify({ action: 'reset', roomId: currentRoomId })
                 });
-
-                setTimeout(() => {
-                    document.getElementById('push-btn').disabled = false;
-                    document.getElementById('status-msg').innerText = "";
-                }, 2500);
             }
-        });
+        })
+        .catch(()=>{});
+    }
+
+    // 「もう一度チャレンジ」ボタンを押したときの処理
+    function retryPush() {
+        document.getElementById('push-btn').disabled = false;
+        document.getElementById('status-msg').innerText = "";
+        nextPage('page3', false);
     }
 </script>
 
