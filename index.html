@@ -4,78 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Happy Birthday!</title>
-    <!-- PeerJS & 紙吹雪ライブラリ -->
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <style>
-        body {
-            background-color: #1a1a2e;
-            color: #ffffff;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            box-sizing: border-box;
-            text-align: center;
-        }
-        .container {
-            background: #16213e;
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            max-width: 450px;
-            width: 100%;
-        }
+        body { background: #1a1a2e; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
+        .container { background: #16213e; padding: 30px; border-radius: 20px; max-width: 450px; margin: 0 auto; }
         .page { display: none; }
         .active { display: block; }
-        
-        button {
-            background: #e94560;
-            color: white;
-            border: none;
-            padding: 14px 28px;
-            font-size: 1.1rem;
-            border-radius: 30px;
-            cursor: pointer;
-            margin: 10px 5px;
-            font-weight: bold;
-            transition: 0.2s;
-        }
-        button:active { transform: scale(0.95); }
-        button:disabled { background: #555; cursor: not-allowed; }
+        button { background: #e94560; color: white; border: none; padding: 14px 28px; font-size: 1.1rem; border-radius: 30px; margin: 10px; font-weight: bold; }
         button.secondary { background: #0f3460; }
-        
-        .status-box {
-            background: #0f3460;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 15px 0;
-            font-size: 1rem;
-            word-break: break-all;
-        }
-        input {
-            padding: 12px;
-            font-size: 1.2rem;
-            border-radius: 8px;
-            border: 2px solid #e94560;
-            width: 70%;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-        .gift-btn {
-            background: #00d26a;
-            font-size: 1.2rem;
-            padding: 15px 30px;
-            text-decoration: none;
-            color: white;
-            display: inline-block;
-            border-radius: 30px;
-            margin-top: 15px;
-            font-weight: bold;
-        }
+        input { padding: 12px; font-size: 1.2rem; border-radius: 8px; border: 2px solid #e94560; text-align: center; width: 70%; margin-bottom: 10px; }
+        .gift-btn { background: #00d26a; font-size: 1.2rem; padding: 15px 30px; color: white; text-decoration: none; border-radius: 30px; display: inline-block; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -89,200 +27,103 @@
         <button class="secondary" onclick="nextPage(2, false)">🔇 無音で進む</button>
     </div>
 
-    <!-- PAGE 2: メインお祝い -->
+    <!-- PAGE 2: メイン -->
     <div id="page2" class="page">
         <h1 style="color: #ff4757;">🎉 Happy Birthday! 🎉</h1>
-        <p style="font-size: 1.2rem;">誕生日おめでとう！！</p>
+        <p>誕生日おめでとう！！</p>
         <div style="font-size: 80px; margin: 20px 0;">🎂</div>
         <button onclick="nextPage(3, false)">🎁 プレゼントを受け取る</button>
         <audio id="bgm" src="https://actions.google.com/sounds/v1/ambiences/carnival_music.ogg" loop></audio>
     </div>
 
-    <!-- PAGE 3: 2台同時タップ接続 -->
+    <!-- PAGE 3: GAS連携同期 -->
     <div id="page3" class="page">
         <h2>🔒 2人同時タップ解錠</h2>
-        <p>このプレゼントは2人のスマホで<br>「せーの」で同時に押さないと開かないよ！</p>
+        <p>「せーの」で同時にボタンを押してね！</p>
         
         <div id="setup-section">
             <p>役割を選んでね：</p>
-            <button onclick="initHost()">主役（ホスト）</button>
-            <button onclick="showJoinInput()" class="secondary">彼女さん（接続）</button>
-            
-            <div id="join-input-box" style="display:none; margin-top:15px;">
-                <input type="number" id="host-id-input" placeholder="4桁のROOM ID"> <br>
-                <button id="connect-btn" onclick="initClient()">接続する</button>
-            </div>
+            <button onclick="setupRole('host')">主役（ホスト）</button>
+            <button onclick="setupRole('client')" class="secondary">彼女さん（接続）</button>
         </div>
 
-        <div id="room-info" class="status-box" style="display:none;">
-            <p id="system-msg" style="margin:0 0 10px 0; color:#f8b500;">サーバーに接続中...</p>
-            <span id="display-room-id" style="color: #ff4757; font-size: 1.8rem; font-weight: bold;"></span>
-        </div>
-
-        <!-- 接続成功後の同期エリア -->
-        <div id="sync-section" style="display:none;">
-            <p style="color: #00d26a; font-weight: bold; font-size: 1.2rem;">✅ 2人の通信が接続されました！</p>
-            <p>通話で「せーの！」と声を合わせて<br>同時に下のボタンを押してね！</p>
-            <button id="push-btn" style="background:#ff4757; font-size:1.5rem; padding:20px 40px;" onclick="handlePush()">せーの！(PUSH)</button>
-            <p id="sync-status" style="margin-top:15px; color:#f8b500; font-weight:bold;"></p>
+        <div id="room-section" style="display:none; margin-top:15px;">
+            <p id="room-desc">同じ4桁のROOM IDを2人で決めて入力してね：</p>
+            <input type="number" id="room-id-input" placeholder="例: 1234"> <br>
+            <button id="push-btn" style="background:#ff4757; font-size:1.4rem;" onclick="pushButton()">せーの！(PUSH)</button>
+            <p id="status-msg" style="color:#f8b500; font-weight:bold; margin-top:15px;"></p>
         </div>
     </div>
 
-    <!-- PAGE 4: ギフト画面 -->
+    <!-- PAGE 4: ギフト -->
     <div id="page4" class="page">
         <h1 style="color: #00d26a;">🔓 解錠成功！！</h1>
-        <p>おめでとう！最高のチームワークでした！</p>
+        <p>おめでとう！完璧なタイミングでした！</p>
         <div style="font-size: 80px; margin: 10px 0;">🎁</div>
-        <p>下記からスタバギフトを受け取ってね！</p>
         <a href="https://gift.starbucks.co.jp/" target="_blank" class="gift-btn">☕ ギフトを受け取る</a>
     </div>
 </div>
 
 <script>
-    let peer = null;
-    let conn = null;
-    let myPushTime = null;
-    let partnerPushTime = null;
+    // ⚠️ ここに自分のGASウェブアプリのURLを貼り付ける ⚠️
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbym4KE82J3gNw8BLqvvsisTJbtVLl9m63rPG5NnHSplvKQ35JBLm-Hv59MoKzUwtTASSA/exec";
+
+    let myRole = "";
+    let checkInterval = null;
 
     function nextPage(pageNum, sound) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById('page' + pageNum).classList.add('active');
-
         if (pageNum === 2) {
             confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
             if (sound) document.getElementById('bgm').play().catch(()=>{});
         }
     }
 
-    // ホスト側の処理
-    function initHost() {
+    function setupRole(role) {
+        myRole = role;
         document.getElementById('setup-section').style.display = 'none';
-        document.getElementById('room-info').style.display = 'block';
-
-        const roomId = Math.floor(1000 + Math.random() * 9000).toString();
-        
-        peer = new Peer('hbd-room-' + roomId, { debug: 1 });
-
-        peer.on('open', (id) => {
-            document.getElementById('system-msg').innerText = "彼女にこのIDを伝えてね：";
-            document.getElementById('display-room-id').innerText = "ROOM ID: " + roomId;
-        });
-
-        peer.on('connection', (c) => {
-            conn = c;
-            setupDataListener();
-            showSyncSection();
-        });
-
-        peer.on('error', (err) => {
-            alert('通信エラーが発生しました。ページを再読み込みしてやり直してください。');
-        });
+        document.getElementById('room-section').style.display = 'block';
     }
 
-    function showJoinInput() {
-        document.getElementById('join-input-box').style.display = 'block';
-    }
+    function pushButton() {
+        const roomId = document.getElementById('room-id-input').value.trim();
+        if (!roomId) return alert('4桁のROOM IDを入力してね');
 
-    // クライアント側の処理
-    function initClient() {
-        const inputId = document.getElementById('host-id-input').value.trim();
-        if (!inputId) return alert('4桁のROOM IDを入力してください');
-
-        document.getElementById('connect-btn').disabled = true;
-        document.getElementById('connect-btn').innerText = "接続中...";
-
-        peer = new Peer();
-
-        peer.on('open', () => {
-            conn = peer.connect('hbd-room-' + inputId, { reliable: true });
-            
-            conn.on('open', () => {
-                setupDataListener();
-                showSyncSection();
-            });
-        });
-
-        peer.on('error', (err) => {
-            alert('部屋が見つからないか、接続に失敗しました。IDを確認してください。');
-            document.getElementById('connect-btn').disabled = false;
-            document.getElementById('connect-btn').innerText = "接続する";
-        });
-    }
-
-    function showSyncSection() {
-        document.getElementById('setup-section').style.display = 'none';
-        document.getElementById('room-info').style.display = 'none';
-        document.getElementById('sync-section').style.display = 'block';
-    }
-
-    // データ受信の監視
-    function setupDataListener() {
-        conn.on('data', (data) => {
-            if (data.type === 'PUSH') {
-                partnerPushTime = data.time;
-                checkSync();
-            } else if (data.type === 'SUCCESS') {
-                // ホストからの解錠成功信号を受け取ってクライアント側も画面遷移
-                unlockSuccess();
-            } else if (data.type === 'FAIL') {
-                // ホストからの失敗信号を受け取って再挑戦表示
-                showFailStatus(data.diff);
-            }
-        });
-    }
-
-    // ボタンが押された時の処理
-    function handlePush() {
-        myPushTime = Date.now();
         document.getElementById('push-btn').disabled = true;
-        document.getElementById('sync-status').innerText = "相手が押すのを待っています...";
+        document.getElementById('status-msg').innerText = "判定中... 相手の押し待ちです";
 
-        if (conn && conn.open) {
-            conn.send({ type: 'PUSH', time: myPushTime });
-        }
-        checkSync();
+        // GASへ押下時間を送信
+        fetch(GAS_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'push', roomId: roomId, role: myRole })
+        }).then(() => {
+            // 結果の定期ポーリング開始（1秒おき）
+            checkInterval = setInterval(() => checkResult(roomId), 1000);
+        });
     }
 
-    // 同時押し判定
-    function checkSync() {
-        if (myPushTime && partnerPushTime) {
-            const diff = Math.abs(myPushTime - partnerPushTime);
-            
-            // 許容誤差 1.5秒以内
-            if (diff <= 1500) {
-                // クライアント側にも成功信号を送信
-                if (conn && conn.open) {
-                    conn.send({ type: 'SUCCESS' });
-                }
-                unlockSuccess();
-            } else {
-                // クライアント側にも失敗信号を送信
-                if (conn && conn.open) {
-                    conn.send({ type: 'FAIL', diff: diff });
-                }
-                showFailStatus(diff);
+    function checkResult(roomId) {
+        fetch(GAS_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: 'check', roomId: roomId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.result === 'success') {
+                clearInterval(checkInterval);
+                nextPage(4, false);
+                confetti({ particleCount: 200, spread: 100, origin: { y: 0.4 } });
+            } else if (data.result === 'fail') {
+                clearInterval(checkInterval);
+                const sec = (data.diff / 1000).toFixed(2);
+                document.getElementById('status-msg').innerText = `ズレちゃった！(誤差: ${sec}秒)\nもう一度せーので押してね！`;
+                setTimeout(() => {
+                    document.getElementById('push-btn').disabled = false;
+                    document.getElementById('status-msg').innerText = "";
+                }, 2000);
             }
-        }
-    }
-
-    function unlockSuccess() {
-        document.getElementById('sync-status').innerText = "成功！！ロック解除中...";
-        setTimeout(() => {
-            nextPage(4, false);
-            confetti({ particleCount: 200, spread: 100, origin: { y: 0.4 } });
-        }, 500);
-    }
-
-    function showFailStatus(diff) {
-        const secDiff = (diff / 1000).toFixed(2);
-        document.getElementById('sync-status').innerText = `ズレちゃった！(誤差: ${secDiff}秒)\nもう一度せーので押してね！`;
-        
-        setTimeout(() => {
-            myPushTime = null;
-            partnerPushTime = null;
-            document.getElementById('push-btn').disabled = false;
-            document.getElementById('sync-status').innerText = "";
-        }, 2000);
+        });
     }
 </script>
 
