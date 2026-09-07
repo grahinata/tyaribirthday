@@ -32,7 +32,7 @@
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxFj7_MKG2fp1I3vVtfZCxrktdlRDUYoQqnKHJVKUaYwEdD6OboI56Q4QM5MpU83y6B/exec";
+    const GAS_URL = "YOUR_GAS_WEB_APP_URL_HERE";
     const myRole = "host";
     
     let currentRoomId = sessionStorage.getItem('roomId');
@@ -79,7 +79,7 @@
         })
         .then(res => res.json())
         .then(data => {
-            if (data.result === 'waiting') return; // 片方の押し待ち中は何もしない
+            if (data.result === 'waiting') return;
 
             if (data.result === 'success') {
                 clearInterval(checkInterval);
@@ -87,11 +87,14 @@
                 location.href = 'gift.html';
 
             } else if (data.result === 'fail') {
-                // 両方揃って失敗が確定したら即座に画面遷移
                 clearInterval(checkInterval);
-                sessionStorage.setItem('lastDiff', data.diff);
-                sessionStorage.setItem('prevSyncPage', 'host-sync.html');
-                location.href = 'fail.html';
+                const sec = (data.diff / 1000).toFixed(2);
+                
+                // ボタンと表示を元に戻す
+                document.getElementById('push-btn').disabled = false;
+                document.getElementById('status-msg').innerText = "";
+
+                alert(`失敗！(誤差: ${sec}秒)\nもう一度せーので押してね！`);
             }
         })
         .catch(() => {});
