@@ -4,146 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Happy Birthday!</title>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <style>
         body { background: #1a1a2e; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; box-sizing: border-box; }
         .container { background: #16213e; padding: 30px; border-radius: 20px; max-width: 450px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .page { display: none; }
-        .active { display: block; }
-        button { background: #e94560; color: white; border: none; padding: 14px 28px; font-size: 1.1rem; border-radius: 30px; margin: 10px 5px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button:disabled { background: #555; cursor: not-allowed; }
+        button { background: #e94560; color: white; border: none; padding: 14px 28px; font-size: 1.1rem; border-radius: 30px; margin: 10px 5px; font-weight: bold; cursor: pointer; }
         button.secondary { background: #0f3460; }
-        .gift-btn { background: #00d26a; font-size: 1.2rem; padding: 15px 30px; color: white; text-decoration: none; border-radius: 30px; display: inline-block; margin-top: 15px; font-weight: bold; }
-        .room-display { background: #0f3460; padding: 15px; border-radius: 12px; margin: 15px 0; }
     </style>
 </head>
 <body>
-
 <div class="container">
-    <!-- PAGE 1: 音量注意 -->
-    <div id="page1" class="page active">
-        <h2>⚠️ 音量ご注意</h2>
-        <p>次のページで音楽が流れます。<br>音量を調整して進んでね！</p>
-        <button onclick="nextPage('page2', true)">🔊 音ありで進む</button> <br>
-        <button class="secondary" onclick="nextPage('page2', false)">🔇 無音で進む</button>
-    </div>
-
-    <!-- PAGE 2: 誕生日メッセージ -->
-    <div id="page2" class="page">
-        <h1 style="color: #ff4757;">🎉 Happy Birthday! 🎉</h1>
-        <p style="font-size: 1.2rem;">誕生日おめでとう！！</p>
-        <div style="font-size: 80px; margin: 20px 0;">🎂</div>
-        <button onclick="nextPage('page3', false)">🎁 プレゼントを受け取る</button>
-        <audio id="bgm" src="https://actions.google.com/sounds/v1/ambiences/carnival_music.ogg" loop></audio>
-    </div>
-
-    <!-- PAGE 3: 同期タップ画面 -->
-    <div id="page3" class="page">
-        <h2>🔒 2人同時タップ解錠</h2>
-        <p>このプレゼントは2人のスマホで<br>「せーの」で同時に押さないと開かないよ！</p>
-        
-        <div class="room-display">
-            <span style="color:#aaa; font-size:0.9rem;">彼女に伝えるROOM ID</span><br>
-            <strong id="display-room-id" style="color:#ff4757; font-size:2rem;">----</strong>
-        </div>
-
-        <button id="push-btn" style="background:#ff4757; font-size:1.5rem; padding:18px 36px;" onclick="pushButton()">せーの！(PUSH)</button>
-        <p id="status-msg" style="color:#f8b500; font-weight:bold; margin-top:15px; min-height: 1.5em;"></p>
-    </div>
-
-    <!-- PAGE FAIL: 失敗画面 -->
-    <div id="page-fail" class="page">
-        <h1 style="color: #ff4757; font-size: 3rem;">💥 失敗！</h1>
-        <p style="font-size: 1.2rem; font-weight: bold;">タイミングがズレちゃいました！</p>
-        <p id="diff-time-msg" style="color: #f8b500; font-size: 1.1rem; margin: 20px 0;"></p>
-        <p>しっかり息を合わせて「せーの！」で押してね！</p>
-        <button onclick="retryPush()" style="font-size: 1.3rem; padding: 15px 35px; background: #0f3460;">🔄 もう一度チャレンジ</button>
-    </div>
-
-    <!-- PAGE 4: ギフト画面 -->
-    <div id="page4" class="page">
-        <h1 style="color: #00d26a;">🔓 解錠成功！！</h1>
-        <p>おめでとう！完璧なチームワークでした！</p>
-        <div style="font-size: 80px; margin: 10px 0;">🎁</div>
-        <p>下記からスタバギフトを受け取ってね！</p>
-        <a href="https://gift.starbucks.co.jp/" target="_blank" class="gift-btn">☕ ギフトを受け取る</a>
-    </div>
+    <h2>⚠️ 音量ご注意</h2>
+    <p>次のページで音楽が流れます。<br>音量を調整して進んでね！</p>
+    <button onclick="goNext(true)">🔊 音ありで進む</button> <br>
+    <button class="secondary" onclick="goNext(false)">🔇 無音で進む</button>
 </div>
-
 <script>
-    const GAS_URL = "YOUR_GAS_WEB_APP_URL_HERE";
-    const myRole = "host";
-
-    // 自動で4桁ID生成
-    const currentRoomId = Math.floor(1000 + Math.random() * 9000).toString();
-    let checkInterval = null;
-
-    document.getElementById('display-room-id').innerText = currentRoomId;
-
-    function nextPage(pageId, sound) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById(pageId).classList.add('active');
-        if (pageId === 'page2') {
-            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-            if (sound) document.getElementById('bgm').play().catch(()=>{});
-        }
-    }
-
-    function pushButton() {
-        if (checkInterval) clearInterval(checkInterval);
-
-        document.getElementById('push-btn').disabled = true;
-        document.getElementById('status-msg').innerText = "⏳ 相手が押すのを待っています...";
-
-        const pushTime = Date.now();
-
-        fetch(GAS_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: 'push', roomId: currentRoomId, role: myRole, time: pushTime })
-        })
-        .then(() => {
-            checkInterval = setInterval(checkResult, 800);
-        })
-        .catch(() => {
-            document.getElementById('status-msg').innerText = "通信エラー。もう一度試してください。";
-            document.getElementById('push-btn').disabled = false;
-        });
-    }
-
-    function checkResult() {
-        fetch(GAS_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: 'check', roomId: currentRoomId })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.result === 'success') {
-                clearInterval(checkInterval);
-                nextPage('page4', false);
-                confetti({ particleCount: 200, spread: 100, origin: { y: 0.4 } });
-
-            } else if (data.result === 'fail') {
-                clearInterval(checkInterval);
-                const sec = (data.diff / 1000).toFixed(2);
-                
-                document.getElementById('diff-time-msg').innerText = `誤差: ${sec}秒`;
-                nextPage('page-fail', false);
-
-                fetch(GAS_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'reset', roomId: currentRoomId })
-                });
-            }
-        })
-        .catch(()=>{});
-    }
-
-    function retryPush() {
-        document.getElementById('push-btn').disabled = false;
-        document.getElementById('status-msg').innerText = "";
-        nextPage('page3', false);
+    function goNext(sound) {
+        sessionStorage.setItem('playSound', sound ? 'true' : 'false');
+        location.href = 'celebration.html';
     }
 </script>
-
 </body>
 </html>
