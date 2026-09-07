@@ -31,7 +31,6 @@
     let currentRoomId = "";
     let checkInterval = null;
 
-    // 前回のROOM IDがあれば自動補完
     const savedRoomId = sessionStorage.getItem('clientRoomId');
     if (savedRoomId) {
         document.getElementById('client-room-input').value = savedRoomId;
@@ -69,8 +68,6 @@
 
             } else if (data.result === 'fail') {
                 clearInterval(checkInterval);
-                
-                // 誤差と元ページを保存して fail.html に遷移
                 sessionStorage.setItem('lastDiff', data.diff);
                 sessionStorage.setItem('prevSyncPage', 'client-sync.html');
 
@@ -81,6 +78,7 @@
                     location.href = 'fail.html';
                 });
             }
+            // 'waiting' の場合は何もせず次のタイマーチェックを待つ
         });
     }
 </script>
