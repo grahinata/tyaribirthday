@@ -3,23 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>同期解錠 - 主役</title>
+    <title>同期解錠 - ホスト</title>
     <style>
         body { background: #1a1a2e; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; box-sizing: border-box; }
         .container { background: #16213e; padding: 30px; border-radius: 20px; max-width: 450px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        button { background: #e94560; color: white; border: none; padding: 18px 36px; font-size: 1.5rem; border-radius: 30px; font-weight: bold; cursor: pointer; }
+        input { padding: 10px; font-size: 1.1rem; border-radius: 8px; border: 2px solid #e94560; text-align: center; width: 80%; margin-bottom: 15px; font-weight: bold; }
+        button { background: #e94560; color: white; border: none; padding: 18px 36px; font-size: 1.5rem; border-radius: 30px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         button:disabled { background: #555; cursor: not-allowed; }
-        .room-display { background: #0f3460; padding: 15px; border-radius: 12px; margin: 15px 0; }
+        .room-display { background: #0f3460; padding: 12px; border-radius: 12px; margin: 15px 0; }
     </style>
 </head>
 <body>
 <div class="container">
     <h2>🔒 2人同時タップ解錠</h2>
-    <p>このプレゼントは2人のスマホで<br>「せーの」で同時に押さないと開かないよ！</p>
     
     <div class="room-display">
-        <span style="color:#aaa; font-size:0.9rem;">相手に伝えるROOM ID</span><br>
+        <span style="color:#aaa; font-size:0.85rem;">相手に伝える ROOM ID</span><br>
         <strong id="display-room-id" style="color:#ff4757; font-size:2rem;">----</strong>
+    </div>
+
+    <div style="margin: 15px 0;">
+        <label style="font-size: 0.9rem; color: #ccc;">事前に伝えた合言葉 (PSK)</label><br>
+        <input type="password" id="psk-input" placeholder="PSKを入力">
     </div>
 
     <button id="push-btn" onclick="pushButton()">せーの！(PUSH)</button>
@@ -35,11 +40,13 @@
         currentRoomId = Math.floor(1000 + Math.random() * 9000).toString();
         sessionStorage.setItem('roomId', currentRoomId);
     }
-    
     document.getElementById('display-room-id').innerText = currentRoomId;
     let checkInterval = null;
 
     function pushButton() {
+        const psk = document.getElementById('psk-input').value.trim();
+        if (!psk) return alert('合言葉(PSK)を入力してね！');
+
         if (checkInterval) clearInterval(checkInterval);
 
         document.getElementById('push-btn').disabled = true;
@@ -47,16 +54,24 @@
 
         fetch(GAS_URL, {
             method: 'POST',
-            body: JSON.stringify({ action: 'push', roomId: currentRoomId, role: myRole, time: Date.now() })
-        }).then(() => {
-            checkInterval = setInterval(checkResult, 800);
+            body: JSON.stringify({ action: 'push', roomId: currentRoomId, role: myRole, time: Date.now(), psk: psk })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.result === 'auth_error') {
+                alert(data.message);
+                document.getElementById('push-btn').disabled = false;
+                document.getElementById('status-msg').innerText = "";
+                return;
+            }
+            checkInterval = setInterval(() => checkResult(psk), 800);
         });
     }
 
-    function checkResult() {
+    function checkResult(psk) {
         fetch(GAS_URL, {
             method: 'POST',
-            body: JSON.stringify({ action: 'check', roomId: currentRoomId })
+            body: JSON.stringify({ action: 'check', roomId: currentRoomId, psk: psk })
         })
         .then(res => res.json())
         .then(data => {
@@ -66,21 +81,18 @@
                 location.href = 'gift.html';
 
             } else if (data.result === 'fail') {
-                // 両方が押し終わって「失敗」と確定した時のみ、タイマーを止めて遷移
                 clearInterval(checkInterval);
                 sessionStorage.setItem('lastDiff', data.diff);
                 sessionStorage.setItem('prevSyncPage', 'host-sync.html');
 
                 fetch(GAS_URL, { 
                     method: 'POST', 
-                    body: JSON.stringify({ action: 'reset', roomId: currentRoomId }) 
+                    body: JSON.stringify({ action: 'reset', roomId: currentRoomId, psk: psk }) 
                 }).then(() => {
                     location.href = 'fail.html';
                 });
             }
-            // data.result === 'waiting' の時は何もしない（待ち続ける）
-        })
-        .catch(() => {});
+        });
     }
 </script>
 </body>
