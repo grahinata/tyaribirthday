@@ -6,20 +6,22 @@
     <title>Happy Birthday!</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <style>
-        body { background: #1a1a2e; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
-        .container { background: #16213e; padding: 30px; border-radius: 20px; max-width: 450px; margin: 0 auto; }
+        body { background: #1a1a2e; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; box-sizing: border-box; }
+        .container { background: #16213e; padding: 30px; border-radius: 20px; max-width: 450px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .page { display: none; }
         .active { display: block; }
-        button { background: #e94560; color: white; border: none; padding: 14px 28px; font-size: 1.1rem; border-radius: 30px; margin: 10px; font-weight: bold; }
+        button { background: #e94560; color: white; border: none; padding: 14px 28px; font-size: 1.1rem; border-radius: 30px; margin: 10px 5px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:disabled { background: #555; cursor: not-allowed; }
         button.secondary { background: #0f3460; }
-        input { padding: 12px; font-size: 1.2rem; border-radius: 8px; border: 2px solid #e94560; text-align: center; width: 70%; margin-bottom: 10px; }
-        .gift-btn { background: #00d26a; font-size: 1.2rem; padding: 15px 30px; color: white; text-decoration: none; border-radius: 30px; display: inline-block; margin-top: 15px; }
+        input { padding: 12px; font-size: 1.5rem; border-radius: 8px; border: 2px solid #e94560; text-align: center; width: 60%; margin-bottom: 10px; font-weight: bold; }
+        .gift-btn { background: #00d26a; font-size: 1.2rem; padding: 15px 30px; color: white; text-decoration: none; border-radius: 30px; display: inline-block; margin-top: 15px; font-weight: bold; }
+        .room-display { background: #0f3460; padding: 15px; border-radius: 12px; margin: 15px 0; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- PAGE 1: 注意書き -->
+    <!-- PAGE 1 -->
     <div id="page1" class="page active">
         <h2>⚠️ 音量ご注意</h2>
         <p>次のページでバースデーソングが流れます。<br>音量を調整して進んでね！</p>
@@ -27,48 +29,59 @@
         <button class="secondary" onclick="nextPage(2, false)">🔇 無音で進む</button>
     </div>
 
-    <!-- PAGE 2: メイン -->
+    <!-- PAGE 2 -->
     <div id="page2" class="page">
         <h1 style="color: #ff4757;">🎉 Happy Birthday! 🎉</h1>
-        <p>誕生日おめでとう！！</p>
+        <p style="font-size: 1.2rem;">誕生日おめでとう！！</p>
         <div style="font-size: 80px; margin: 20px 0;">🎂</div>
         <button onclick="nextPage(3, false)">🎁 プレゼントを受け取る</button>
         <audio id="bgm" src="https://actions.google.com/sounds/v1/ambiences/carnival_music.ogg" loop></audio>
     </div>
 
-    <!-- PAGE 3: GAS連携同期 -->
+    <!-- PAGE 3 -->
     <div id="page3" class="page">
         <h2>🔒 2人同時タップ解錠</h2>
-        <p>「せーの」で同時にボタンを押してね！</p>
+        <p>このプレゼントは2人のスマホで<br>「せーの」で同時に押さないと開かないよ！</p>
         
         <div id="setup-section">
             <p>役割を選んでね：</p>
-            <button onclick="setupRole('host')">主役（ホスト）</button>
-            <button onclick="setupRole('client')" class="secondary">彼女さん（接続）</button>
+            <button onclick="setupHost()">主役（ホスト）</button>
+            <button onclick="showClientInput()" class="secondary">彼女さん（接続）</button>
+            
+            <div id="client-input-box" style="display:none; margin-top:15px;">
+                <p>教えてもらったROOM IDを入れてね：</p>
+                <input type="number" id="client-room-input" placeholder="4桁ID"> <br>
+                <button onclick="setupClient()">確定する</button>
+            </div>
         </div>
 
         <div id="room-section" style="display:none; margin-top:15px;">
-            <p id="room-desc">同じ4桁のROOM IDを2人で決めて入力してね：</p>
-            <input type="number" id="room-id-input" placeholder="例: 1234"> <br>
-            <button id="push-btn" style="background:#ff4757; font-size:1.4rem;" onclick="pushButton()">せーの！(PUSH)</button>
-            <p id="status-msg" style="color:#f8b500; font-weight:bold; margin-top:15px;"></p>
+            <div class="room-display">
+                <span style="color:#aaa; font-size:0.9rem;">ROOM ID</span><br>
+                <strong id="display-room-id" style="color:#ff4757; font-size:2rem;">----</strong>
+            </div>
+            
+            <button id="push-btn" style="background:#ff4757; font-size:1.5rem; padding:18px 36px;" onclick="pushButton()">せーの！(PUSH)</button>
+            <p id="status-msg" style="color:#f8b500; font-weight:bold; margin-top:15px; min-height: 1.5em;"></p>
         </div>
     </div>
 
-    <!-- PAGE 4: ギフト -->
+    <!-- PAGE 4 -->
     <div id="page4" class="page">
         <h1 style="color: #00d26a;">🔓 解錠成功！！</h1>
-        <p>おめでとう！完璧なタイミングでした！</p>
+        <p>おめでとう！完璧なチームワークでした！</p>
         <div style="font-size: 80px; margin: 10px 0;">🎁</div>
+        <p>下記からスタバギフトを受け取ってね！</p>
         <a href="https://gift.starbucks.co.jp/" target="_blank" class="gift-btn">☕ ギフトを受け取る</a>
     </div>
 </div>
 
 <script>
-    // ⚠️ ここに自分のGASウェブアプリのURLを貼り付ける ⚠️
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbym4KE82J3gNw8BLqvvsisTJbtVLl9m63rPG5NnHSplvKQ35JBLm-Hv59MoKzUwtTASSA/exec";
+    // ⚠️ 取得したGASのURLを貼り付け ⚠️
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxFj7_MKG2fp1I3vVtfZCxrktdlRDUYoQqnKHJVKUaYwEdD6OboI56Q4QM5MpU83y6B/exec";
 
     let myRole = "";
+    let currentRoomId = "";
     let checkInterval = null;
 
     function nextPage(pageNum, sound) {
@@ -80,48 +93,75 @@
         }
     }
 
-    function setupRole(role) {
-        myRole = role;
+    // ホスト（自分）：4桁のランダムIDを自動発行
+    function setupHost() {
+        myRole = 'host';
+        currentRoomId = Math.floor(1000 + Math.random() * 9000).toString();
+        
+        document.getElementById('display-room-id').innerText = currentRoomId;
+        document.getElementById('setup-section').style.display = 'none';
+        document.getElementById('room-section').style.display = 'block';
+    }
+
+    function showClientInput() {
+        document.getElementById('client-input-box').style.display = 'block';
+    }
+
+    // クライアント（彼女さん）：ID入力
+    function setupClient() {
+        const input = document.getElementById('client-room-input').value.trim();
+        if (!input || input.length !== 4) return alert('4桁のROOM IDを入力してね');
+        
+        myRole = 'client';
+        currentRoomId = input;
+
+        document.getElementById('display-room-id').innerText = currentRoomId;
         document.getElementById('setup-section').style.display = 'none';
         document.getElementById('room-section').style.display = 'block';
     }
 
     function pushButton() {
-        const roomId = document.getElementById('room-id-input').value.trim();
-        if (!roomId) return alert('4桁のROOM IDを入力してね');
-
         document.getElementById('push-btn').disabled = true;
-        document.getElementById('status-msg').innerText = "判定中... 相手の押し待ちです";
+        document.getElementById('status-msg').innerText = "相手のタップを待っています...";
 
-        // GASへ押下時間を送信
+        const pushTime = Date.now();
+
         fetch(GAS_URL, {
             method: 'POST',
-            body: JSON.stringify({ action: 'push', roomId: roomId, role: myRole })
+            body: JSON.stringify({ action: 'push', roomId: currentRoomId, role: myRole, time: pushTime })
         }).then(() => {
-            // 結果の定期ポーリング開始（1秒おき）
-            checkInterval = setInterval(() => checkResult(roomId), 1000);
+            checkInterval = setInterval(() => checkResult(), 800);
         });
     }
 
-    function checkResult(roomId) {
+    function checkResult() {
         fetch(GAS_URL, {
             method: 'POST',
-            body: JSON.stringify({ action: 'check', roomId: roomId })
+            body: JSON.stringify({ action: 'check', roomId: currentRoomId })
         })
         .then(res => res.json())
         .then(data => {
             if (data.result === 'success') {
                 clearInterval(checkInterval);
-                nextPage(4, false);
-                confetti({ particleCount: 200, spread: 100, origin: { y: 0.4 } });
+                document.getElementById('status-msg').innerText = "解錠成功！！";
+                setTimeout(() => {
+                    nextPage(4, false);
+                    confetti({ particleCount: 200, spread: 100, origin: { y: 0.4 } });
+                }, 500);
             } else if (data.result === 'fail') {
                 clearInterval(checkInterval);
                 const sec = (data.diff / 1000).toFixed(2);
                 document.getElementById('status-msg').innerText = `ズレちゃった！(誤差: ${sec}秒)\nもう一度せーので押してね！`;
+                
+                fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'reset', roomId: currentRoomId })
+                });
+
                 setTimeout(() => {
                     document.getElementById('push-btn').disabled = false;
                     document.getElementById('status-msg').innerText = "";
-                }, 2000);
+                }, 2500);
             }
         });
     }
