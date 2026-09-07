@@ -1,31 +1,3 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>同期解錠 - 主役</title>
-    <style>
-        body { background: #1a1a2e; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; box-sizing: border-box; }
-        .container { background: #16213e; padding: 30px; border-radius: 20px; max-width: 450px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        button { background: #e94560; color: white; border: none; padding: 18px 36px; font-size: 1.5rem; border-radius: 30px; font-weight: bold; cursor: pointer; }
-        button:disabled { background: #555; cursor: not-allowed; }
-        .room-display { background: #0f3460; padding: 15px; border-radius: 12px; margin: 15px 0; }
-    </style>
-</head>
-<body>
-<div class="container">
-    <h2>🔒 2人同時タップ解錠</h2>
-    <p>このプレゼントは2人のスマホで<br>「せーの」で同時に押さないと開かないよ！</p>
-    
-    <div class="room-display">
-        <span style="color:#aaa; font-size:0.9rem;">相手に伝えるROOM ID</span><br>
-        <strong id="display-room-id" style="color:#ff4757; font-size:2rem;">----</strong>
-    </div>
-
-    <button id="push-btn" onclick="pushButton()">せーの！(PUSH)</button>
-    <p id="status-msg" style="color:#f8b500; font-weight:bold; margin-top:15px; min-height: 1.5em;"></p>
-</div>
-
 <script>
     const GAS_URL = "https://script.google.com/macros/s/AKfycbxFj7_MKG2fp1I3vVtfZCxrktdlRDUYoQqnKHJVKUaYwEdD6OboI56Q4QM5MpU83y6B/exec";
     const myRole = "host";
@@ -56,6 +28,8 @@
         .then(data => {
             if (data.result === 'success') {
                 clearInterval(checkInterval);
+                // GASから取得したギフトURLを一時保存して遷移
+                sessionStorage.setItem('giftUrl', data.giftUrl);
                 location.href = 'gift.html';
             } else if (data.result === 'fail') {
                 clearInterval(checkInterval);
@@ -67,5 +41,3 @@
         });
     }
 </script>
-</body>
-</html>
