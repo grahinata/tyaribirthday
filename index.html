@@ -18,10 +18,24 @@
     <button onclick="goNext(true)">🔊 音ありで進む</button> <br>
     <button class="secondary" onclick="goNext(false)">🔇 無音で進む</button>
 </div>
+
 <script>
     function goNext(sound) {
-        sessionStorage.setItem('playSound', sound ? 'true' : 'false');
-        location.href = 'celebration.html';
+        if (sound) {
+            sessionStorage.setItem('playSound', 'true');
+            
+            // タップ操作の直後に再生を開始してブラウザの自動再生規制を解除する
+            const audio = new Audio('bgm.mp3');
+            audio.play().then(() => {
+                location.href = 'celebration.html';
+            }).catch(err => {
+                console.log("再生許可取得エラー:", err);
+                location.href = 'celebration.html';
+            });
+        } else {
+            sessionStorage.setItem('playSound', 'false');
+            location.href = 'celebration.html';
+        }
     }
 </script>
 </body>
