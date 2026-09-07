@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>解錠成功！</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        body { background: #1a1a2e; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; box-sizing: border-box; }
+        .container { background: #16213e; padding: 30px; border-radius: 20px; max-width: 450px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .gift-btn { background: #00d26a; font-size: 1.2rem; padding: 15px 30px; color: white; text-decoration: none; border-radius: 30px; display: inline-block; margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 style="color: #00d26a;">🔓 解錠成功！！</h1>
+    <p>おめでとう！完璧なチームワークでした！</p>
+    <div style="font-size: 80px; margin: 10px 0;">🎁</div>
+    <p>下記からスタバギフトを受け取ってね！</p>
+    <a href="https://gift.starbucks.co.jp/" target="_blank" class="gift-btn">☕ ギフトを受け取る</a>
+</div>
+<script>
+    confetti({ particleCount: 200, spread: 100, origin: { y: 0.4 } });
+</script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ミッション完了！</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        body { background: #1a1a2e; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; box-sizing: border-box; }
+        .container { background: #16213e; padding: 30px; border-radius: 20px; max-width: 450px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 style="color: #00d26a;">🔓 解錠成功！！</h1>
+    <p style="font-size: 1.2rem; font-weight: bold;">ご協力ありがとうございました！</p>
+    <div style="font-size: 80px; margin: 20px 0;">👏✨</div>
+    <p>無事にミッション完了です！<br>主役の画面を確認してみてね！</p>
+</div>
+<script>
+    confetti({ particleCount: 200, spread: 100, origin: { y: 0.4 } });
+</script>
+</body>
+</html>
