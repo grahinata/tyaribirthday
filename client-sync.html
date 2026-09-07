@@ -47,6 +47,7 @@
         document.getElementById('push-btn').disabled = true;
         document.getElementById('status-msg').innerText = "⏳ 相手が押すのを待っています...";
 
+        // 1. 押した時間をGASに記録
         fetch(GAS_URL, {
             method: 'POST',
             body: JSON.stringify({ action: 'push', roomId: currentRoomId, role: myRole, time: Date.now(), psk: psk })
@@ -59,7 +60,12 @@
                 document.getElementById('status-msg').innerText = "";
                 return;
             }
+            // 2. 正常に記録できたら、相手が押すまで定期的に状態確認を開始
             checkInterval = setInterval(() => checkResult(psk), 800);
+        })
+        .catch(() => {
+            document.getElementById('push-btn').disabled = false;
+            document.getElementById('status-msg').innerText = "通信エラーが発生しました";
         });
     }
 
@@ -70,11 +76,17 @@
         })
         .then(res => res.json())
         .then(data => {
+            if (data.result === 'waiting') {
+                // 相手が押すのを待っている状態（何もしない）
+                return;
+            }
+
             if (data.result === 'success') {
                 clearInterval(checkInterval);
                 location.href = 'thanks.html';
 
             } else if (data.result === 'fail') {
+                // 両方が押し終わって初めてここを通る
                 clearInterval(checkInterval);
                 sessionStorage.setItem('lastDiff', data.diff);
                 sessionStorage.setItem('prevSyncPage', 'client-sync.html');
@@ -86,7 +98,8 @@
                     location.href = 'fail.html';
                 });
             }
-        });
+        })
+        .catch(() => {});
     }
 </script>
 </body>
