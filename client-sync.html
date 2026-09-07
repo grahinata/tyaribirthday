@@ -7,18 +7,21 @@
     <style>
         body { background: #1a1a2e; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; box-sizing: border-box; }
         .container { background: #16213e; padding: 30px; border-radius: 20px; max-width: 450px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        button { background: #e94560; color: white; border: none; padding: 18px 36px; font-size: 1.5rem; border-radius: 30px; font-weight: bold; cursor: pointer; }
+        input { padding: 10px; font-size: 1.1rem; border-radius: 8px; border: 2px solid #e94560; text-align: center; width: 80%; margin-bottom: 15px; font-weight: bold; }
+        button { background: #e94560; color: white; border: none; padding: 18px 36px; font-size: 1.5rem; border-radius: 30px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         button:disabled { background: #555; cursor: not-allowed; }
-        input { padding: 12px; font-size: 1.5rem; border-radius: 8px; border: 2px solid #e94560; text-align: center; width: 60%; margin-bottom: 10px; font-weight: bold; }
     </style>
 </head>
 <body>
 <div class="container">
     <h2>🔒 解錠をお手伝い</h2>
-    <p>教えてもらったROOM IDを入力して<br>「せーの」で同時にボタンを押してね！</p>
     
     <div style="margin: 15px 0;">
-        <input type="number" id="client-room-input" placeholder="4桁ID">
+        <label style="font-size: 0.9rem; color: #ccc;">教えてもらった ROOM ID</label><br>
+        <input type="number" id="client-room-input" placeholder="4桁ID"><br>
+        
+        <label style="font-size: 0.9rem; color: #ccc;">事前に伝えた合言葉 (PSK)</label><br>
+        <input type="password" id="psk-input" placeholder="PSKを入力">
     </div>
 
     <button id="push-btn" onclick="pushButton()">せーの！(PUSH)</button>
@@ -31,17 +34,14 @@
     let currentRoomId = "";
     let checkInterval = null;
 
-    const savedRoomId = sessionStorage.getItem('clientRoomId');
-    if (savedRoomId) {
-        document.getElementById('client-room-input').value = savedRoomId;
-    }
-
     function pushButton() {
-        const input = document.getElementById('client-room-input').value.trim();
-        if (!input || input.length !== 4) return alert('4桁のROOM IDを入力してね');
-        currentRoomId = input;
-        sessionStorage.setItem('clientRoomId', currentRoomId);
+        const inputRoom = document.getElementById('client-room-input').value.trim();
+        const psk = document.getElementById('psk-input').value.trim();
 
+        if (!inputRoom || inputRoom.length !== 4) return alert('4桁のROOM IDを入力してね');
+        if (!psk) return alert('合言葉(PSK)を入力してね！');
+
+        currentRoomId = inputRoom;
         if (checkInterval) clearInterval(checkInterval);
 
         document.getElementById('push-btn').disabled = true;
@@ -49,16 +49,24 @@
 
         fetch(GAS_URL, {
             method: 'POST',
-            body: JSON.stringify({ action: 'push', roomId: currentRoomId, role: myRole, time: Date.now() })
-        }).then(() => {
-            checkInterval = setInterval(checkResult, 800);
+            body: JSON.stringify({ action: 'push', roomId: currentRoomId, role: myRole, time: Date.now(), psk: psk })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.result === 'auth_error') {
+                alert(data.message);
+                document.getElementById('push-btn').disabled = false;
+                document.getElementById('status-msg').innerText = "";
+                return;
+            }
+            checkInterval = setInterval(() => checkResult(psk), 800);
         });
     }
 
-    function checkResult() {
+    function checkResult(psk) {
         fetch(GAS_URL, {
             method: 'POST',
-            body: JSON.stringify({ action: 'check', roomId: currentRoomId })
+            body: JSON.stringify({ action: 'check', roomId: currentRoomId, psk: psk })
         })
         .then(res => res.json())
         .then(data => {
@@ -67,21 +75,18 @@
                 location.href = 'thanks.html';
 
             } else if (data.result === 'fail') {
-                // 両方が押し終わって「失敗」と確定した時のみ、タイマーを止めて遷移
                 clearInterval(checkInterval);
                 sessionStorage.setItem('lastDiff', data.diff);
                 sessionStorage.setItem('prevSyncPage', 'client-sync.html');
 
                 fetch(GAS_URL, { 
                     method: 'POST', 
-                    body: JSON.stringify({ action: 'reset', roomId: currentRoomId }) 
+                    body: JSON.stringify({ action: 'reset', roomId: currentRoomId, psk: psk }) 
                 }).then(() => {
                     location.href = 'fail.html';
                 });
             }
-            // data.result === 'waiting' の時は何もしない（待ち続ける）
-        })
-        .catch(() => {});
+        });
     }
 </script>
 </body>
